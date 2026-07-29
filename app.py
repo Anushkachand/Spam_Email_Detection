@@ -1,5 +1,6 @@
 import streamlit as st
 import pickle
+import os
 
 st.set_page_config(
     page_title="Spam Email Detection",
@@ -7,8 +8,29 @@ st.set_page_config(
     layout="centered"
 )
 
-model = pickle.load(open("model.pkl", "rb"))
-vectorizer = pickle.load(open("vectorizer.pkl", "rb"))
+# Load model safely
+try:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+    with open(os.path.join(BASE_DIR, "model.pkl"), "rb") as f:
+        model = pickle.load(f)
+
+    with open(os.path.join(BASE_DIR, "vectorizer.pkl"), "rb") as f:
+        vectorizer = pickle.load(f)
+
+except FileNotFoundError as e:
+    st.error(f"File not found: {e}")
+    st.stop()
+
+except ModuleNotFoundError as e:
+    st.error(f"Missing module: {e}")
+    st.info("Install the required packages listed in requirements.txt")
+    st.stop()
+
+except Exception as e:
+    st.error(f"Error loading model: {e}")
+    st.stop()
+
 
 st.title("📧 Spam Email Detection")
 st.write("Detect whether an email is **Spam** or **Ham (Not Spam)** using Machine Learning.")
@@ -25,41 +47,31 @@ if st.button("🔍 Predict"):
 
     if email.strip() == "":
         st.warning("Please enter an email message.")
-    else:
 
+    else:
         email_vector = vectorizer.transform([email])
 
         prediction = model.predict(email_vector)[0]
 
-        probability = model.predict_proba(email_vector)
+        confidence = model.predict_proba(email_vector).max() * 100
 
-        confidence = probability.max() * 100
-
-        st.markdown("---")
-
-        if prediction == "spam":
-
+        if prediction.lower() == "spam":
             st.error("🚨 This Email is SPAM")
-
         else:
-
             st.success("✅ This Email is NOT SPAM")
 
-        st.write(f"### Confidence : **{confidence:.2f}%**")
+        st.write(f"### Confidence: {confidence:.2f}%")
 
 st.sidebar.title("About Project")
 
-st.sidebar.info(
-"""
+st.sidebar.info("""
 ### Spam Email Detection
-
-This project predicts whether an email is:
 
 ✅ Ham (Not Spam)
 
 🚨 Spam
 
-Machine Learning Algorithm:
+Machine Learning:
 - Multinomial Naive Bayes
 
 Feature Extraction:
@@ -69,8 +81,7 @@ Developed using:
 - Python
 - Scikit-learn
 - Streamlit
-"""
-)
+""")
 
 st.sidebar.markdown("---")
 st.sidebar.write("Made for B.Tech ML Project")
