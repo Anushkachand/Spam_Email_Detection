@@ -8,27 +8,18 @@ st.set_page_config(
     layout="centered"
 )
 
-# Load model and vectorizer safely
-try:
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# Load model and vectorizer
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+try:
     with open(os.path.join(BASE_DIR, "model.pkl"), "rb") as f:
         model = pickle.load(f)
 
     with open(os.path.join(BASE_DIR, "vectorizer.pkl"), "rb") as f:
         vectorizer = pickle.load(f)
 
-except FileNotFoundError as e:
-    st.error(f"File not found: {e}")
-    st.stop()
-
-except ModuleNotFoundError as e:
-    st.error(f"Missing module: {e}")
-    st.info("Install the required packages listed in requirements.txt")
-    st.stop()
-
 except Exception as e:
-    st.error(f"Error loading model: {e}")
+    st.error(f"Error loading files: {e}")
     st.stop()
 
 st.title("📧 Spam Email Detection")
@@ -46,30 +37,26 @@ if st.button("🔍 Predict"):
 
     if not email.strip():
         st.warning("Please enter an email message.")
-
     else:
-        try:
-            email_vector = vectorizer.transform([email])
+        email_vector = vectorizer.transform([email])
 
-            prediction = model.predict(email_vector)[0]
+        prediction = model.predict(email_vector)[0]
 
-            if hasattr(model, "predict_proba"):
-                confidence = model.predict_proba(email_vector).max() * 100
-            else:
-                confidence = None
+        confidence = None
+        if hasattr(model, "predict_proba"):
+            confidence = model.predict_proba(email_vector).max() * 100
 
-            st.markdown("---")
+        st.markdown("---")
 
-            if str(prediction).lower() == "spam":
-                st.error("🚨 This Email is SPAM")
-            else:
-                st.success("✅ This Email is NOT SPAM")
+        if str(prediction).lower() == "spam":
+            st.error("🚨 This Email is SPAM")
+        else:
+            st.success("✅ This Email is NOT SPAM")
 
-            if confidence is not None:
-                st.write(f"### Confidence : **{confidence:.2f}%**")
-
-        except Exception as e:
-            st.error(f"Prediction Error: {e}")
+        if confidence is not None:
+            st.write(f"### Confidence: **{confidence:.2f}%**")
+        else:
+            st.info("Confidence score is not available for this model.")
 
 st.sidebar.title("About Project")
 
@@ -78,17 +65,17 @@ st.sidebar.info("""
 
 This project predicts whether an email is:
 
-✅ Ham (Not Spam)
+✅ **Ham (Not Spam)**
 
-🚨 Spam
+🚨 **Spam**
 
-Machine Learning Algorithm:
+**Machine Learning Algorithm**
 - Multinomial Naive Bayes
 
-Feature Extraction:
+**Feature Extraction**
 - TF-IDF
 
-Developed using:
+**Developed using**
 - Python
 - Scikit-learn
 - Streamlit
