@@ -8,7 +8,7 @@ st.set_page_config(
     layout="centered"
 )
 
-# Load model safely
+# Load model and vectorizer safely
 try:
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -31,7 +31,6 @@ except Exception as e:
     st.error(f"Error loading model: {e}")
     st.stop()
 
-
 st.title("📧 Spam Email Detection")
 st.write("Detect whether an email is **Spam** or **Ham (Not Spam)** using Machine Learning.")
 
@@ -45,33 +44,45 @@ email = st.text_area(
 
 if st.button("🔍 Predict"):
 
-    if email.strip() == "":
+    if not email.strip():
         st.warning("Please enter an email message.")
 
     else:
-        email_vector = vectorizer.transform([email])
+        try:
+            email_vector = vectorizer.transform([email])
 
-        prediction = model.predict(email_vector)[0]
+            prediction = model.predict(email_vector)[0]
 
-        confidence = model.predict_proba(email_vector).max() * 100
+            if hasattr(model, "predict_proba"):
+                confidence = model.predict_proba(email_vector).max() * 100
+            else:
+                confidence = None
 
-        if prediction.lower() == "spam":
-            st.error("🚨 This Email is SPAM")
-        else:
-            st.success("✅ This Email is NOT SPAM")
+            st.markdown("---")
 
-        st.write(f"### Confidence: {confidence:.2f}%")
+            if str(prediction).lower() == "spam":
+                st.error("🚨 This Email is SPAM")
+            else:
+                st.success("✅ This Email is NOT SPAM")
+
+            if confidence is not None:
+                st.write(f"### Confidence : **{confidence:.2f}%**")
+
+        except Exception as e:
+            st.error(f"Prediction Error: {e}")
 
 st.sidebar.title("About Project")
 
 st.sidebar.info("""
 ### Spam Email Detection
 
+This project predicts whether an email is:
+
 ✅ Ham (Not Spam)
 
 🚨 Spam
 
-Machine Learning:
+Machine Learning Algorithm:
 - Multinomial Naive Bayes
 
 Feature Extraction:
